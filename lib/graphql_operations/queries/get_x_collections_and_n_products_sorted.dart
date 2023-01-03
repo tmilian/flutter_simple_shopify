@@ -24,6 +24,7 @@ query($cursor: String, $sortKey: CollectionSortKeys, $sortKeyProduct: ProductCol
               variants(first: 250) {
                 edges {
                   node {
+                    id
                     title
                     image {
                       altText

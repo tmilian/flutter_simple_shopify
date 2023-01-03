@@ -20,6 +20,7 @@ query getFeaturedCollectionQuery($query: String!){
               variants(first: 1) {
                 edges {
                   node {
+                    id
                     title
                     image {
                       altText
