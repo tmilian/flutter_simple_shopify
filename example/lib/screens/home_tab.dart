@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_shopify/flutter_simple_shopify.dart';
 import 'product_detail_screen.dart';
+import 'package:collection/collection.dart';
 
 class HomeTab extends StatefulWidget {
   @override
@@ -48,7 +49,7 @@ class _HomeTabState extends State<HomeTab> {
           sortKey: SortKeyProduct.BEST_SELLING);
       if (mounted) {
         setState(() {
-          products = bestSellingProducts;
+          products = bestSellingProducts ?? [];
           _isLoading = false;
         });
       }
@@ -64,7 +65,7 @@ class _HomeTabState extends State<HomeTab> {
         alignment: Alignment.bottomCenter,
         width: MediaQuery.of(context).size.width,
         height: MediaQuery.of(context).size.height,
-        decoration: product?.images?.first?.originalSrc != null
+        decoration: product.images.firstOrNull?.originalSrc != null
             ? BoxDecoration(
                 image: DecorationImage(
                     fit: BoxFit.cover,
@@ -90,7 +91,7 @@ class _HomeTabState extends State<HomeTab> {
         context,
         MaterialPageRoute(
             builder: (context) => ProductDetailScreen(
-                  product: product,
+                  productHandle: product.handle!,
                 )));
   }
 }

@@ -1,12 +1,12 @@
 const String getProductByHandleQuery = r'''
-query getProductByHandle($handle : String!){
-  productByHandle(handle: $handle) {
+query($handle: String!){
+  product(handle: $handle) {
     options(first: 50) {
       id
       name
       values
     }
-    metafields(namespace: $metafieldsNamespace, first: 250) {
+    metafields(first: 250) {
       edges {
         node {
           id

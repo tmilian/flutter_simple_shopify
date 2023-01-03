@@ -27,7 +27,7 @@ class _CollectionTabState extends State<CollectionTab> {
                 itemCount: collections.length,
                 itemBuilder: (_, int index) => ListTile(
                   onTap: () => _navigateToCollectionDetailScreen(
-                      collections[index].id, collections[index].title),
+                      collections[index].handle!, collections[index].title),
                   title: Text(collections[index].title),
                 ),
               ),
@@ -36,17 +36,13 @@ class _CollectionTabState extends State<CollectionTab> {
   }
 
   Future<void> _fetchCollections() async {
-    try {
-      final shopifyStore = ShopifyStore.instance;
-      final collections = await shopifyStore.getAllCollections();
-      if (mounted) {
-        setState(() {
-          this.collections = collections;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint(e);
+    final shopifyStore = ShopifyStore.instance;
+    final collections = await shopifyStore.getAllCollections();
+    if (mounted) {
+      setState(() {
+        this.collections = collections;
+        _isLoading = false;
+      });
     }
   }
 
@@ -62,7 +58,7 @@ class _CollectionTabState extends State<CollectionTab> {
 
 class CollectionDetailScreen extends StatefulWidget {
   const CollectionDetailScreen(
-      {Key key, @required this.collectionId, @required this.collectionTitle})
+      {Key? key, required this.collectionId, required this.collectionTitle})
       : super(key: key);
   final String collectionId;
   final String collectionTitle;
@@ -100,23 +96,17 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   }
 
   Future<void> _fetchProductsByCollectionId() async {
-    try {
-      final shopifyStore = ShopifyStore.instance;
-      final products =
-          await shopifyStore.getXProductsAfterCursorWithinCollection(
-        widget.collectionId,
-        4,
-        startCursor: null,
-        sortKey: SortKeyProductCollection.RELEVANCE,
-      );
-      if (mounted) {
-        setState(() {
-          this.products = products;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint(e);
+    final shopifyStore = ShopifyStore.instance;
+    print(widget.collectionId);
+    final collection =
+        await shopifyStore.getCollectionByHandle(widget.collectionId);
+    print(collection);
+    final products = collection.products.productList;
+    if (mounted) {
+      setState(() {
+        this.products = products;
+        _isLoading = false;
+      });
     }
   }
 }

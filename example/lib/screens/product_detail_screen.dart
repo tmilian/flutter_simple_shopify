@@ -1,32 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_shopify/flutter_simple_shopify.dart';
 import 'package:flutter_simple_shopify/models/src/product/product_variant/product_variant.dart';
+import 'package:collection/collection.dart';
 
 class ProductDetailScreen extends StatefulWidget {
-  const ProductDetailScreen({Key key, @required this.product})
+  const ProductDetailScreen({Key? key, required this.productHandle})
       : super(key: key);
-  final Product product;
+  final String productHandle;
 
   @override
-  _ProductDetailScreenState createState() => _ProductDetailScreenState(product);
+  _ProductDetailScreenState createState() =>
+      _ProductDetailScreenState(productHandle);
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  _ProductDetailScreenState(this.product);
-  final Product product;
-  String checkoutId;
-  String checkoutUrl;
-  List<LineItem> lineItems;
+  _ProductDetailScreenState(this.productHandle);
+  final String productHandle;
+  Product? product;
+  String? checkoutId;
+  String? checkoutUrl;
+  List<LineItem> lineItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProduct();
+  }
+
+  Future<void> _fetchProduct() async {
+    final shopifyStore = ShopifyStore.instance;
+    final collections = await shopifyStore.getProductByHandle(productHandle);
+    if (mounted) {
+      setState(() {
+        this.product = collections;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final product = this.product;
+    if (product == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(product.title),
       ),
       body: ListView(
         children: <Widget>[
-          product?.images?.first?.originalSrc != null
+          product.images.firstOrNull?.originalSrc != null
               ? Image.network(
                   product.images.first.originalSrc,
                   width: MediaQuery.of(context).size.width,
@@ -35,14 +63,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 )
               : Container(),
           Column(
-            children: _buildProductVariants(),
+            children: _buildProductVariants(product),
           )
         ],
       ),
     );
   }
 
-  List<Widget> _buildProductVariants() {
+  List<Widget> _buildProductVariants(Product product) {
     List<Widget> widgetList = [];
     product.productVariants.forEach((variant) => widgetList.add(ListTile(
           title: Text(variant.title),

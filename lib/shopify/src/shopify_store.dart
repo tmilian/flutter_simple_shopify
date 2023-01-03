@@ -1,17 +1,15 @@
 import 'package:flutter_simple_shopify/enums/enums.dart';
 import 'package:flutter_simple_shopify/enums/src/sort_key_collection.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_all_collections_optimized.dart';
-import 'package:flutter_simple_shopify/graphql_operations/queries/get_all_products_from_collection_by_id.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_all_products_on_query.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_collections_by_ids.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_metafileds_from_product.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_product_recommendations.dart';
-import 'package:flutter_simple_shopify/graphql_operations/queries/get_products_by_handle.dart';
+import 'package:flutter_simple_shopify/graphql_operations/queries/get_product_by_handle.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_products_by_ids.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_shop.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_x_collections_and_n_products_sorted.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_x_products_after_cursor.dart';
-import 'package:flutter_simple_shopify/graphql_operations/queries/get_x_products_after_cursor_within_collection.dart';
 import 'package:flutter_simple_shopify/graphql_operations/queries/get_x_products_on_query_after_cursor.dart';
 import 'package:flutter_simple_shopify/mixins/src/shopfiy_error.dart';
 import 'package:flutter_simple_shopify/models/src/collection/collections/collections.dart';
@@ -21,7 +19,7 @@ import 'package:flutter_simple_shopify/models/src/product/products/products.dart
 import 'package:flutter_simple_shopify/models/src/shop/shop.dart';
 import 'package:graphql/client.dart';
 
-import '../../graphql_operations/queries/get_featured_collections.dart';
+import '../../graphql_operations/queries/get_collection_by_handle.dart';
 import '../../graphql_operations/queries/get_n_products.dart';
 import '../../graphql_operations/queries/get_products.dart';
 import '../../models/src/collection/collection.dart';
@@ -107,7 +105,7 @@ class ShopifyStore with ShopifyError {
     if (deleteThisPartOfCache) {
       _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
     }
-    return Product.fromGraphJson(result.data ?? {});
+    return Product.fromGraphJson(result.data?['product'] ?? {});
   }
 
   /// Returns a List of [Product].
@@ -172,49 +170,39 @@ class ShopifyStore with ShopifyError {
   /// Returns a list of recommended [Product] by given id.
   Future<List<Product>?> getProductRecommendations(String productId,
       {bool deleteThisPartOfCache = false}) async {
-    try {
-      final WatchQueryOptions _options = WatchQueryOptions(
-          document: gql(getProductRecommendationsQuery),
-          variables: {'id': productId});
-      final QueryResult result = await _graphQLClient!.query(_options);
-      checkForError(result);
-      if (deleteThisPartOfCache) {
-        _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
-      }
-      var newResponse = List.generate(
-          result.data!['productRecommendations']?.length ?? 0,
-          (index) => {
-                "node":
-                    (result.data!['productRecommendations'] ?? const {})[index]
-              });
-      var tempProducts = {"edges": newResponse};
-      return Products.fromGraphJson(tempProducts).productList;
-    } catch (e) {
-      print(e);
+    final WatchQueryOptions _options = WatchQueryOptions(
+        document: gql(getProductRecommendationsQuery),
+        variables: {'id': productId});
+    final QueryResult result = await _graphQLClient!.query(_options);
+    checkForError(result);
+    if (deleteThisPartOfCache) {
+      _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
     }
-    return [Product.fromGraphJson({})];
+    var newResponse = List.generate(
+        result.data!['productRecommendations']?.length ?? 0,
+        (index) => {
+              "node":
+                  (result.data!['productRecommendations'] ?? const {})[index]
+            });
+    var tempProducts = {"edges": newResponse};
+    return Products.fromGraphJson(tempProducts).productList;
   }
 
   /// Returns a List of [Collection]
   Future<List<Collection>?> getCollectionsByIds(List<String> idList,
       {bool deleteThisPartOfCache = false}) async {
-    try {
-      final WatchQueryOptions _options = WatchQueryOptions(
-          document: gql(getCollectionsByIdsQuery), variables: {'ids': idList});
-      final QueryResult result = await _graphQLClient!.query(_options);
-      checkForError(result);
-      if (deleteThisPartOfCache) {
-        _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
-      }
-
-      var newResponse = List.generate(result.data!['nodes']?.length ?? 0,
-          (index) => {"node": (result.data!['nodes'] ?? const {})[index]});
-      var tempCollection = {"edges": newResponse};
-      return Collections.fromGraphJson(tempCollection).collectionList;
-    } catch (e) {
-      print(e);
+    final WatchQueryOptions _options = WatchQueryOptions(
+        document: gql(getCollectionsByIdsQuery), variables: {'ids': idList});
+    final QueryResult result = await _graphQLClient!.query(_options);
+    checkForError(result);
+    if (deleteThisPartOfCache) {
+      _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
     }
-    return [Collection.fromJson({})];
+
+    var newResponse = List.generate(result.data!['nodes']?.length ?? 0,
+        (index) => {"node": (result.data!['nodes'] ?? const {})[index]});
+    var tempCollection = {"edges": newResponse};
+    return Collections.fromGraphJson(tempCollection).collectionList;
   }
 
   /// Returns the Shop.
@@ -233,21 +221,15 @@ class ShopifyStore with ShopifyError {
   /// Returns a collection by handle.
   Future<Collection> getCollectionByHandle(String collectionName,
       {bool deleteThisPartOfCache = false}) async {
-    try {
-      final WatchQueryOptions _options = WatchQueryOptions(
-          document: gql(getFeaturedCollectionQuery),
-          variables: {'query': collectionName});
-      final QueryResult result = await _graphQLClient!.query(_options);
-      checkForError(result);
-      if (deleteThisPartOfCache) {
-        _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
-      }
-      return Collections.fromGraphJson(result.data!['collections'])
-          .collectionList[0];
-    } catch (e) {
-      print(e);
+    final WatchQueryOptions _options = WatchQueryOptions(
+        document: gql(getCollectionByHandleQuery),
+        variables: {'handle': collectionName});
+    final QueryResult result = await _graphQLClient!.query(_options);
+    checkForError(result);
+    if (deleteThisPartOfCache) {
+      _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
     }
-    return Collection.fromGraphJson({});
+    return Collection.fromGraphJson(result.data?['collection'] ?? {});
   }
 
   /// Returns all available collections.
@@ -316,66 +298,6 @@ class ShopifyStore with ShopifyError {
       _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
     }
     return collectionList;
-  }
-
-  /// Returns a List of [Product].
-  ///
-  /// Returns all Products from the [Collection] with the [id].
-  Future<List<Product>> getAllProductsFromCollectionById(String id,
-      {bool deleteThisPartOfCache = false,
-      SortKeyProductCollection sortKeyProductCollection =
-          SortKeyProductCollection.CREATED}) async {
-    String? cursor;
-    List<Product> productList = [];
-    Collection collection;
-    QueryOptions _options;
-    do {
-      _options = WatchQueryOptions(
-          document: gql(getCollectionByIdQuery),
-          variables: {
-            'id': id,
-            'cursor': cursor,
-            'sortKey': sortKeyProductCollection.parseToString()
-          });
-      final QueryResult result = await _graphQLClient!.query(_options);
-      checkForError(result);
-      productList
-          .addAll(Collection.fromGraphJson(result.data!).products.productList);
-      collection = (Collection.fromGraphJson(result.data!));
-      cursor = productList.isNotEmpty ? productList.last.cursor : '';
-    } while (collection.products.hasNextPage == true);
-    if (deleteThisPartOfCache) {
-      _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
-    }
-    return productList;
-  }
-
-  /// Returns a List of [Product].
-  ///
-  /// Returns the first [limit] Products after the given [startCursor].
-  /// [limit] has to be in the range of 0 and 250.
-  Future<List<Product>?> getXProductsAfterCursorWithinCollection(
-      String id, int limit,
-      {String? startCursor = null,
-      SortKeyProductCollection sortKey = SortKeyProductCollection.BEST_SELLING,
-      bool deleteThisPartOfCache = false,
-      bool reverse = false}) async {
-    String? cursor = startCursor;
-    final WatchQueryOptions _options = WatchQueryOptions(
-        document: gql(getXProductsAfterCursorWithinCollectionQuery),
-        variables: {
-          'id': id,
-          'cursor': cursor,
-          'limit': limit,
-          'sortKey': sortKey.parseToString(),
-          'reverse': reverse,
-        });
-    final QueryResult result = await _graphQLClient!.query(_options);
-    checkForError(result);
-    if (deleteThisPartOfCache) {
-      _graphQLClient!.cache.writeQuery(_options.asRequest, data: {});
-    }
-    return (Collection.fromGraphJson(result.data!)).products.productList;
   }
 
   /// Returns a List of [Product].

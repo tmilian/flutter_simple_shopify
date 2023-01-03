@@ -22,10 +22,8 @@ class Collection with _$Collection {
     ShopifyImage? image,
   }) = _Collection;
 
-  static Collection fromGraphJson(Map<String, dynamic> json) {
-    Map<String, dynamic> nodeJson = json['node'] ?? const {};
-
-    var _products = Products.fromGraphJson(nodeJson['products'] ?? const {});
+  static Collection fromGraphJson(Map<String, dynamic> json, {String? cursor}) {
+    var _products = Products.fromGraphJson(json['products'] ?? const {});
     final _realProducts = <Product>[];
 
     for (final _product in _products.productList) {
@@ -45,18 +43,17 @@ class Collection with _$Collection {
     _products = _products.copyWith.call(productList: _realProducts);
 
     return Collection(
-      title: nodeJson['title'],
-      description: nodeJson['description'],
-      descriptionHtml: nodeJson['descriptionHtml'],
-      handle: nodeJson['handle'],
-      id: nodeJson['id'],
-      updatedAt: nodeJson['updatedAt'],
-      image: nodeJson['image'] != null
-          ? ShopifyImage.fromJson(
-              (json['node'] ?? const {})['image'] ?? const {})
+      title: json['title'],
+      description: json['description'],
+      descriptionHtml: json['descriptionHtml'],
+      handle: json['handle'],
+      id: json['id'],
+      updatedAt: json['updatedAt'],
+      image: json['image'] != null
+          ? ShopifyImage.fromJson(json['image'] ?? const {})
           : null,
       products: _products,
-      cursor: json['cursor'],
+      cursor: cursor,
     );
   }
 
